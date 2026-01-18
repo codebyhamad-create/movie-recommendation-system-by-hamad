@@ -7,26 +7,13 @@ def fetch_poster(movie_id):
     try:
         data = requests.get(url).json()
         poster_path = data.get('poster_path')
-        if poster_path:
-            return "https://image.tmdb.org/t/p/w500/" + poster_path.lstrip('/')
-        return "https://via.placeholder.com/500x750?text=No+Poster"
+        return "https://image.tmdb.org/t/p/w500/" + poster_path if poster_path else "https://via.placeholder.com/500"
     except:
-        return "https://via.placeholder.com/500x750?text=Error"
-
-def recommend(movie):
-    index = movies[movies['title'] == movie].index[0]
-    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
-    names = []
-    posters = []
-    for i in distances[1:6]:
-        movie_id = movies.iloc[i[0]].movie_id
-        posters.append(fetch_poster(movie_id))
-        names.append(movies.iloc[i[0]].title)
-    return names, posters
+        return "https://via.placeholder.com/500"
 
 st.header('Movie Recommender System')
 
-# Use relative paths so it works on GitHub
+# Relative paths (Works on any computer)
 movies = pickle.load(open('movie_list.pkl','rb'))
 similarity = pickle.load(open('similarity.pkl','rb'))
 
@@ -34,9 +21,12 @@ movie_list = movies['title'].values
 selected_movie = st.selectbox("Select a movie", movie_list)
 
 if st.button('Show Recommendation'):
-    names, posters = recommend(selected_movie)
+    index = movies[movies['title'] == selected_movie].index[0]
+    distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
+    
     cols = st.columns(5)
     for i in range(5):
+        movie_id = movies.iloc[distances[i+1][0]].movie_id
         with cols[i]:
-            st.text(names[i])
-            st.image(posters[i])
+            st.text(movies.iloc[distances[i+1][0]].title)
+            st.image(fetch_poster(movie_id))
